@@ -3,6 +3,7 @@
     * fixed Pod linking errors
     * added missing internal function _unquote
     * added more testing which caught the missing function
+    * added more documentation about embedded quotes and slashes
 
 0.0001    2010-06-18 21:41:01 America/New_York
     initial import
