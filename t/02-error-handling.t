@@ -52,6 +52,7 @@ sub t1_method_miss { die "t1_method_miss\n" }
 sub t1_key_miss { die "t1_key_miss\n" }
 sub t1_index_miss { die "t1_index_miss\n" }
 sub t1_key_on_non_hash { die "t1_key_on_non_hash\n" }
+sub t1_args_on_non_method { die "t1_args_on_non_method\n" }
 
 sub t2_method_miss { die "t2_method_miss\n" }
 sub t2_key_miss { die "t2_key_miss\n" }
