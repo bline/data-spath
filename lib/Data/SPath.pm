@@ -206,7 +206,7 @@ version 0.0002
     # returns { bat => "bar" }
     $match = spath $data, "/bar/1";
 
-    # returns 1 
+    # returns 1
     $match = spath $data, q{/"foo bar"};
 
     # returns 20
