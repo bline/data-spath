@@ -1,5 +1,12 @@
 
-0.0003    2010-06-19 12:44:05 America/New_York
+0.0003    2010-06-19 12:55:45 America/New_York
+    * added ability to call methods with simple arguments.
+        * arguments can be quoted with single or double quotes
+        * arguments can be barewords that match \w+
+    * added POD for arguments, still a little shady, but a start
+    * fixed _unqoute to unquote single or double quoted strings
+    * we now tokenize the path string first, simplifying code, easier to maintain
+    * fixed bug that made it not possible to have a key with a new line
 
 0.0002    2010-06-19 08:08:51 America/New_York
     * fixed Pod linking errors

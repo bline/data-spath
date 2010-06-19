@@ -355,12 +355,12 @@ object
 
 If the current level is an object, the key is treated as the name of a method
 to call on the object. The method is called in list context if C<spath> was
-called in list context, otherwise it is called in scalar context. If the method
-returns more than one item, the current level is set to an array reference of
-the return, otherwise the current level is set to the return of the method
-call.  It is possible to pass in arguments to object methods. Arguments are
-expect to be a comma separated list of either quoted structure or bare word which
-must match C<\w+>. See L</SYNOPSIS> for examples.
+called in list context, otherwise scalar context. If the method returns more
+than one item, the current level is set to an array reference of the return,
+otherwise the current level is set to the return of the method call.  It is
+possible to pass in arguments to object methods. Arguments are expected to be a
+comma separated list of either quoted structures or barewords which must match
+C<\w+>. See L</SYNOPSIS> for examples.
 
 =back
 
