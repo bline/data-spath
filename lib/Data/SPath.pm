@@ -8,7 +8,11 @@ BEGIN {
 
 use Carp qw/croak/;
 use Scalar::Util qw/reftype blessed/;
-use Text::Balanced qw/ extract_delimited /;
+use Text::Balanced qw/
+    extract_delimited
+    extract_bracketed
+    extract_multiple
+/;
 
 use Sub::Exporter -setup => {
     exports => [ spath => \&_build_spath ]
