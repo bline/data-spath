@@ -2,7 +2,7 @@ NAME
     Data::SPath - lookup on nested data with simple path notation
 
 VERSION
-    version 0.0002
+    version 0.0003
 
 SYNOPSIS
         use Data::SPath
@@ -11,7 +11,8 @@ SYNOPSIS
                 method_miss => \&_method_miss,
                 key_miss => \&_key_miss,
                 index_miss => \&_index_miss,
-                key_on_non_hash => \&_key_on_non_hash
+                key_on_non_hash => \&_key_on_non_hash,
+                args_on_non_method => \&_args_on_non_method
             };
 
         my $data = {
@@ -19,6 +20,7 @@ SYNOPSIS
             bar => [ { bat => "boo" }, { bat => "bar" } ]
             "foo bar" => 1,
             "foo\"bar" => { "foo/bar" => 20 }
+            obj => SomeClass->new,
         };
 
         my $match;
@@ -37,6 +39,9 @@ SYNOPSIS
 
         # returns 20
         $match = spath $data, q{/"foo\\"bar/"foo/bar"};
+
+        # returns the call to method passing arguments
+        $match = spath $data, q{/obj/method( "arg1", 'arg2', bareword )};
 
 DESCRIPTION
     This module implements very simple path lookups on nested data
@@ -69,33 +74,48 @@ FUNCTIONS
     *   path
 
         Path should start with a slash and be a slash separated list of keys
-        to match on. Each level of key is one level deeper in the data. When
-        the current level in the data is a hash reference, the key is looked
-        up in the hash, and the current level is set to the return of the
-        lookup on the hash. When the current level is an array reference,
-        the key should be an index into the array, the current level is then
-        set to the return of the lookup on the array reference. If the
-        current level is an object, the key is treated as the name of a
-        method to call on the object. The method is called in list context
-        if "spath" was called in list context, otherwise it is called in
-        scalar context. If the method returns more than one thing, the
-        current level is set to an array reference of the return, otherwise
-        the current level is set to the return of the method call. See
-        "SYNOPSIS" for examples.
+        to lookup. Each level of key is one level deeper in the data.
 
-    Quotes are allowed on each level. You only need quotes if you have
-    spaces or "/" in your keys. For example:
+        *   hash
 
-        my $data = { "foo bar" => 1, "foo/bar" => 1 };
-        spath $data, q{/"foo bar"};
-        spath $data, q{/"foo/bar"};
+            When the current level in the data is a hash reference, the key
+            is looked up in the hash, and the current level is set to the
+            return of the lookup on the hash.
 
-    You can also use "\" to escape quotes:
+        *   array
 
-        spath $data, q{/"foo\"bar"}; # embedded quotes
+            When the current level is an array reference, the key should be
+            an index into the array, the current level is then set to the
+            return of the lookup on the array reference.
 
-    * opts The only options currently accepted are error handlers. See
-    "ERROR HANDLING".
+        *   object
+
+            If the current level is an object, the key is treated as the
+            name of a method to call on the object. The method is called in
+            list context if "spath" was called in list context, otherwise it
+            is called in scalar context. If the method returns more than one
+            item, the current level is set to an array reference of the
+            return, otherwise the current level is set to the return of the
+            method call. It is possible to pass in arguments to object
+            methods. Arguments are expect to be a comma seperated list of
+            either quoted structure or bare word which must match "\w+". See
+            "SYNOPSIS" for examples.
+
+        Quotes are allowed on each level. You only need quotes if you have
+        spaces or "/" in your keys. For example:
+
+            my $data = { "foo bar" => 1, "foo/bar" => 1 };
+            spath $data, q{/"foo bar"};
+            spath $data, q{/"foo/bar"};
+
+        You can also use "\" to escape quotes:
+
+            spath $data, q{/"foo\"bar"}; # embedded quotes
+
+    *   opts
+
+        The only options currently accepted are error handlers. See "ERROR
+        HANDLING".
 
 EXPORTS
     Nothing is exported by default. You can request "spath" be exported to
@@ -110,7 +130,8 @@ ERROR HANDLING
             method_miss => \&_method_miss,
             key_miss => \&_key_miss,
             index_miss => \&_index_miss,
-            key_on_non_hash => \&_key_on_non_hash
+            key_on_non_hash => \&_key_on_non_hash,
+            args_on_non_method => \&_args_on_non_method
         };
 
     Or you can setup default error handlers at compile time by passing them
@@ -121,7 +142,8 @@ ERROR HANDLING
                 method_miss => \&_method_miss,
                 key_miss => \&_key_miss,
                 index_miss => \&_index_miss,
-                key_on_non_hash => \&_key_on_non_hash
+                key_on_non_hash => \&_key_on_non_hash,
+                args_on_non_method => \&_args_on_non_method
             };
 
     The default error handlers look like this:
@@ -157,6 +179,19 @@ ERROR HANDLING
             croak "tried to access key '"
                 . $key
                 . "' on a non-hash type $reftype at spath path element "
+                . $depth;
+        }
+
+        sub _args_on_non_method {
+            my ( $key, $current, $args, $depth ) = @_;
+            my $reftype = reftype( $current ) || '(non reference)';
+            croak "tried to pass arguments '"
+                . $args
+                . "' to a non-method '"
+                . $key
+                . "' of type "
+                . $reftype
+                . "at spath path element "
                 . $depth;
         }
 

@@ -2,7 +2,7 @@ use strict;
 use warnings;
 package Data::SPath;
 BEGIN {
-  $Data::SPath::VERSION = '0.0002';
+  $Data::SPath::VERSION = '0.0003';
 }
 #ABSTRACT: lookup on nested data with simple path notation
 
@@ -89,28 +89,58 @@ sub _key_on_non_hash {
     my $reftype = reftype( $current ) || '(non reference)';
     croak "tried to access key '"
         . $key
-        . "' on a non-hash type $reftype at spath path element "
+        . "' on a non-hash type "
+        . $reftype
+        . " at spath path element "
+        . $depth;
+}
+
+sub _args_on_non_method {
+    my ( $key, $current, $args, $depth ) = @_;
+    my $reftype = reftype( $current ) || '(non reference)';
+    croak "tried to pass arguments '"
+        . $args
+        . "' to a non-method '"
+        . $key
+        . "' of type "
+        . $reftype
+        . "at spath path element "
         . $depth;
 }
 
 
-sub _spath {
-    my ( $data, $path, $opts ) = @_;
+
+sub _tokenize {
+    my ( $path ) = @_;
 
     my $remaining_path = $path;
-    my $current = $data;
-    my $depth = 0;
     my $extracted;
-    my $wantlist = wantarray;
+    my @tokens;
 
     while ( $remaining_path ) {
-        $depth++;
+        my ( $prefix, $args );
         my $key;
+
         if ( _quoted( $remaining_path ) ) {
-            ( $key, $remaining_path ) = extract_delimited( $remaining_path, q|'"|, '/' );
+            ( $key,  $remaining_path ) = extract_delimited( $remaining_path, q|'"|, '/' );
+            ( $args, $remaining_path ) = extract_bracketed( $remaining_path, q|('")| );
             $key = _unescape _unquote $key;
+
         }
         else {
+            # must extract arguments first to keep extract_delimited from getting
+            # quoted structures with / in them
+            if ( $remaining_path =~ m,^/[^/]+\(, ) {
+                ( $extracted, $remaining_path, $prefix ) = extract_bracketed( $remaining_path, q|('")|, '[^(]*' );
+                if ( defined $prefix or defined $remaining_path ) {
+                    no warnings 'uninitialized';
+                    $remaining_path = $prefix . $remaining_path;
+                    $args = $extracted;
+                }
+                else {
+                    $remaining_path = $extracted;
+                }
+            }
             ( $extracted, $remaining_path ) = extract_delimited( $remaining_path, '/' );
             if ( not $extracted ) {
                 ( $extracted, $remaining_path ) = ( $remaining_path, undef );
@@ -118,45 +148,81 @@ sub _spath {
             else {
                 $remaining_path = ( chop $extracted ) . $remaining_path;
             }
-            ( $key ) = $extracted =~ m,^/(.*),g;
+            ( $key ) = $extracted =~ m,^/(.*),gs;
             $key = _unescape $key;
         }
 
-        no warnings 'uninitialized';
+        push @tokens, [ $key, $args ];
+    }
+    return \@tokens;
+}
+
+sub _spath {
+    my ( $data, $path, $opts ) = @_;
+
+    my $current = $data;
+    my $depth = 0;
+    my $wantlist = wantarray;
+
+    my $tokens = _tokenize( $path );
+
+    for my $token ( @{ $tokens } ) {
+        $depth++;
+        my ( $key, $args ) = @{ $token };
+
         if ( blessed $current ) {
+            my @args;
+            if ( defined $args ) {
+                ($args) = $args =~ /^\((.*)\)$/;
+                @args = map { _unescape( $_ =~ /^['"]/ ? _unquote( $_ ) : $_ ) }
+                    extract_multiple( $args, [
+                        # quoted structures
+                        sub { extract_delimited( $_[0], q|'"| ) },
+                        # handle unquoted bare words
+                        qr/\s*(\w+)/s,
+                        qr/\s*([^,]+)(.*)/s
+                    ], undef, 1 );
+            }
             if ( my $method = $current->can( $key ) ) {
                 if ( $wantlist ) {
-                    my @current = $current->$method();
+                    my @current = $current->$method( @args );
                     $current = @current > 1 ? \@current : $current[0];
                 }
                 else {
-                    $current = $current->$method();
+                    $current = $current->$method( @args );
                 }
             }
             else {
                 return $opts->{method_miss}->( $key, $current, $depth );
             }
         }
-        # optimization taken from Data::DPath
-        elsif ( ref( $current ) eq 'HASH' or reftype( $current ) eq 'HASH' ) {
-            if ( exists $current->{ $key } ) {
-                $current = $current->{ $key };
+        else {
+
+            return $opts->{args_on_non_method}->( $key, $current, $args, $depth )
+                if defined $args;
+
+            # optimization taken from Data::DPath
+            no warnings 'uninitialized';
+            if ( ref( $current ) eq 'HASH' or reftype( $current ) eq 'HASH' ) {
+                if ( exists $current->{ $key } ) {
+                    $current = $current->{ $key };
+                }
+                else {
+                    return $opts->{key_miss}->( $key, $current, $depth );
+                }
+            }
+            elsif ( ref( $current ) eq 'ARRAY' or reftype( $current ) eq 'ARRAY' ) {
+                unless ( $key =~ /^\d+$/ ) {
+                    $opts->{key_on_non_hash}->( $key, $current, $depth );
+                }
+                if ( $#{ $current } < $key ) {
+                    return $opts->{index_miss}->( $key, $current, $depth );
+                }
+                $current = $current->[ $key ];
             }
             else {
-                return $opts->{key_miss}->( $key, $current, $depth );
+                return $opts->{key_on_non_hash}->( $key, $current, $depth );
             }
-        }
-        elsif ( ref( $current ) eq 'ARRAY' or reftype( $current ) eq 'ARRAY' ) {
-            unless ( $key =~ /^\d+$/ ) {
-                $opts->{key_on_non_hash}->( $key, $current, $depth );
-            }
-            if ( $#{ $current } < $key ) {
-                return $opts->{index_miss}->( $key, $current, $depth );
-            }
-            $current = $current->[ $key ];
-        }
-        else {
-            return $opts->{key_on_non_hash}->( $key, $current, $depth );
         }
     }
     return $current;
@@ -175,7 +241,7 @@ Data::SPath - lookup on nested data with simple path notation
 
 =head1 VERSION
 
-version 0.0002
+version 0.0003
 
 =head1 SYNOPSIS
 
@@ -185,7 +251,8 @@ version 0.0002
             method_miss => \&_method_miss,
             key_miss => \&_key_miss,
             index_miss => \&_index_miss,
-            key_on_non_hash => \&_key_on_non_hash
+            key_on_non_hash => \&_key_on_non_hash,
+            args_on_non_method => \&_args_on_non_method
         };
 
     my $data = {
@@ -193,6 +260,7 @@ version 0.0002
         bar => [ { bat => "boo" }, { bat => "bar" } ]
         "foo bar" => 1,
         "foo\"bar" => { "foo/bar" => 20 }
+        obj => SomeClass->new,
     };
 
     my $match;
@@ -211,6 +279,9 @@ version 0.0002
 
     # returns 20
     $match = spath $data, q{/"foo\\"bar/"foo/bar"};
+
+    # returns the call to method passing arguments
+    $match = spath $data, q{/obj/method( "arg1", 'arg2', bareword )};
 
 =head1 DESCRIPTION
 
@@ -248,18 +319,38 @@ something other than a hash reference, an array reference or an object.
 
 path
 
-Path should start with a slash and be a slash separated list of keys to match
-on. Each level of key is one level deeper in the data. When the current level
-in the data is a hash reference, the key is looked up in the hash, and the
-current level is set to the return of the lookup on the hash. When the current
-level is an array reference, the key should be an index into the array, the
-current level is then set to the return of the lookup on the array reference.
+Path should start with a slash and be a slash separated list of keys to lookup.
+Each level of key is one level deeper in the data.
+
+=over 4
+
+=item *
+
+hash
+
+When the current level in the data is a hash reference, the key is looked up in
+the hash, and the current level is set to the return of the lookup on the hash.
+
+=item *
+
+array
+
+When the current level is an array reference, the key should be an index into
+the array, the current level is then set to the return of the lookup on the
+array reference.
+
+=item *
+
+object
+
 If the current level is an object, the key is treated as the name of a method
 to call on the object. The method is called in list context if C<spath> was
 called in list context, otherwise it is called in scalar context. If the method
-returns more than one thing, the current level is set to an array reference of
+returns more than one item, the current level is set to an array reference of
 the return, otherwise the current level is set to the return of the method
-call. See L</SYNOPSIS> for examples.
+call.  It is possible to pass in arguments to object methods. Arguments are
+expect to be a comma seperated list of either quoted structure or bare word which
+must match C<\w+>. See L</SYNOPSIS> for examples.
 
 =back
 
@@ -274,9 +365,14 @@ You can also use C<\> to escape quotes:
 
     spath $data, q{/"foo\"bar"}; # embedded quotes
 
-* opts
+=item *
+
+opts
+
 The only options currently accepted are error handlers. See L</"ERROR
 HANDLING">.
+
+=back
 
 =head1 EXPORTS
 
@@ -293,7 +389,8 @@ C<spath>:
         method_miss => \&_method_miss,
         key_miss => \&_key_miss,
         index_miss => \&_index_miss,
-        key_on_non_hash => \&_key_on_non_hash
+        key_on_non_hash => \&_key_on_non_hash,
+        args_on_non_method => \&_args_on_non_method
     };
 
 Or you can setup default error handlers at compile time by passing them into
@@ -304,7 +401,8 @@ your call to C<import()>:
             method_miss => \&_method_miss,
             key_miss => \&_key_miss,
             index_miss => \&_index_miss,
-            key_on_non_hash => \&_key_on_non_hash
+            key_on_non_hash => \&_key_on_non_hash,
+            args_on_non_method => \&_args_on_non_method
         };
 
 The default error handlers look like this:
@@ -340,6 +438,19 @@ The default error handlers look like this:
         croak "tried to access key '"
             . $key
             . "' on a non-hash type $reftype at spath path element "
+            . $depth;
+    }
+
+    sub _args_on_non_method {
+        my ( $key, $current, $args, $depth ) = @_;
+        my $reftype = reftype( $current ) || '(non reference)';
+        croak "tried to pass arguments '"
+            . $args
+            . "' to a non-method '"
+            . $key
+            . "' of type "
+            . $reftype
+            . "at spath path element "
             . $depth;
     }
 
