@@ -57,7 +57,7 @@ sub _unescape {
 # not?)
 sub _unquote {
     my ($str) = @_;
-    $str =~ s/^"(.*)"$/$1/sg;
+    $str =~ s/^(['"])(.*)\1$/$2/sg;
     return $str;
 }
 
