@@ -1,6 +1,6 @@
 #!perl
 use strict;
-use Test::More tests => 17;
+use Test::More tests => 21;
 
 BEGIN {
     use_ok(
@@ -9,7 +9,8 @@ BEGIN {
             method_miss => \&t1_method_miss,
             key_miss => \&t1_key_miss,
             index_miss => \&t1_index_miss,
-            key_on_non_hash => \&t1_key_on_non_hash
+            key_on_non_hash => \&t1_key_on_non_hash,
+            args_on_non_method => \&t1_args_on_non_method
         }
     )
 }
@@ -37,6 +38,11 @@ is( $@, "t1_method_miss\n", "default method_miss error handler" );
 ok( !eval { spath $data, "/object/bar", { method_miss => \&t2_method_miss } }, "inline method_miss error handler croaks" );
 is( $@, "t2_method_miss\n", "inline method_miss error handler" );
 
+ok( !eval { spath $data, "/string('bar', 'baz')" }, "croak args_on_non_method" );
+is( $@, "t1_args_on_non_method\n", "default args_on_non_method error handler" );
+ok( !eval { spath $data, "/string('bar', 'baz', 'bat')", { args_on_non_method => \&t2_args_on_non_method } }, "inline args_on_non_method error handler croaks" );
+is( $@, "t2_args_on_non_method\n", "inline args_on_non_method error handler" );
+
 ok( !eval { spath $data, "/array/3" }, "croak index_miss" );
 is( $@, "t1_index_miss\n", "default index_miss error handler" );
 ok( !eval { spath $data, "/array/3", { index_miss => \&t2_index_miss } }, "inline index_miss error handler croaks" );
@@ -46,11 +52,13 @@ sub t1_method_miss { die "t1_method_miss\n" }
 sub t1_key_miss { die "t1_key_miss\n" }
 sub t1_index_miss { die "t1_index_miss\n" }
 sub t1_key_on_non_hash { die "t1_key_on_non_hash\n" }
+sub t1_args_on_non_method { die "t1_args_on_non_method\n" }
 
 sub t2_method_miss { die "t2_method_miss\n" }
 sub t2_key_miss { die "t2_key_miss\n" }
 sub t2_index_miss { die "t2_index_miss\n" }
 sub t2_key_on_non_hash { die "t2_key_on_non_hash\n" }
+sub t2_args_on_non_method { die "t2_args_on_non_method\n" }
 
 BEGIN {
     package TObj;
