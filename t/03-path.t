@@ -1,7 +1,7 @@
 #!perl
 
 use strict;
-use Test::More tests => 95;
+use Test::More tests => 100;
 
 BEGIN {
     use_ok( "Data::SPath", 'spath' );
@@ -84,6 +84,17 @@ is( spath( $data, "/object3/a/0" ), $data->{object3}->a->[0], "object with array
 is( spath( $data, "/object3/b/foo" ), $data->{object3}->b->{foo}, "object with hash" );
 is( spath( $data, "/array1/1/a" ), $data->{array1}->[1]->a, "array with object" );
 is( spath( $data, "/hash1/poo/a" ), $data->{hash1}->{poo}->a, "hash with object" );
+my %args = (
+    bareword => [ 'foo, bar', 'foo bar'],
+    double_quoted => [ q|"fooo", "bar"|, 'fooo bar' ],
+    single_quoted => [ q|'baz', 'bat'|, 'baz bat' ],
+    mix_quoted => [ q|'asdf', "qwerty"|, 'asdf qwerty' ],
+    mix_quoted_barewords => [ q|'here', "I", am, "for", all, "to/see"|, 'here I am for all to/see' ],
+);
+for ( keys %args ) {
+    is( spath ( $data, "/object1/with_args($args{$_}[0])" ), $args{$_}[1] );
+}
+
 for ( 1 .. 21 ) {
     is( spath( $data, "/string$_" ), $data->{"string$_"}, qq(string '$data->{"string$_"}' lookup) );
 }
@@ -106,6 +117,7 @@ BEGIN {
     sub b { $_[0][1] }
     sub c { $_[0][2] }
     sub d { $_[0][3] }
+    sub with_args { shift; "@_" }
 }
 
 
