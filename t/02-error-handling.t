@@ -1,6 +1,6 @@
 #!perl
 use strict;
-use Test::More tests => 17;
+use Test::More tests => 21;
 
 BEGIN {
     use_ok(
