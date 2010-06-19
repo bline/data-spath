@@ -1,0 +1,10 @@
+/blib
+/.build
+/inc
+/Makefile
+/Makefile.old
+/MANIFEST
+/MANIFEST.bak
+/META.*
+/pm_to_blib
+/Data-SPath-*
