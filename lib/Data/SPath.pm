@@ -353,7 +353,7 @@ called in list context, otherwise it is called in scalar context. If the method
 returns more than one item, the current level is set to an array reference of
 the return, otherwise the current level is set to the return of the method
 call.  It is possible to pass in arguments to object methods. Arguments are
-expect to be a comma seperated list of either quoted structure or bare word which
+expect to be a comma separated list of either quoted structure or bare word which
 must match C<\w+>. See L</SYNOPSIS> for examples.
 
 =back
