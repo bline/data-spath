@@ -49,6 +49,14 @@ sub _unescape {
     return $str;
 }
 
+# Modified from Data::DPath. Added /s modifier to allow new lines in keys (why
+# not?)
+sub _unquote {
+    my ($str) = @_;
+    $str =~ s/^"(.*)"$/$1/sg;
+    return $str;
+}
+
 sub _quoted { shift =~ m,^/["'], }
 
 sub _method_miss {
@@ -183,18 +191,26 @@ version 0.0002
     my $data = {
         foo => [ qw/foobly fooble/ ],
         bar => [ { bat => "boo" }, { bat => "bar" } ]
+        "foo bar" => 1,
+        "foo\"bar" => { "foo/bar" => 20 }
     };
 
     my $match;
 
     # returns foobly
-    $match = spath $data, "/foo/1";
+    $match = spath $data, "/foo/0";
 
     # returns boo
     $match = spath $data, "/bar/0/bat";
 
     # returns { bat => "bar" }
     $match = spath $data, "/bar/1";
+
+    # returns 1 
+    $match = spath $data, q{/"foo bar"};
+
+    # returns 20
+    $match = spath $data, q{/"foo\\"bar/"foo/bar"};
 
 =head1 DESCRIPTION
 
@@ -205,7 +221,7 @@ complicated matching similar to C<XPath>. This module does not support
 B<matching>, only lookups. So one call will alway return a single match. Also,
 when this module encounters a C<blessed> reference, instead of access the references
 internal data structure (like L<Data::DPath>) a method call is made on the object
-by the name of the key. See L</SYNOPSYS>.
+by the name of the key. See L</SYNOPSIS>.
 
 =head1 FUNCTIONS
 
@@ -243,16 +259,24 @@ to call on the object. The method is called in list context if C<spath> was
 called in list context, otherwise it is called in scalar context. If the method
 returns more than one thing, the current level is set to an array reference of
 the return, otherwise the current level is set to the return of the method
-call. See L</SYNOPSYS> for examples.
-
-=item *
-
-opts
-
-The only options currently accepted are error handlers. See L</"ERROR
-HANDLING">.
+call. See L</SYNOPSIS> for examples.
 
 =back
+
+Quotes are allowed on each level. You only need quotes if you have spaces
+or C</> in your keys. For example:
+
+    my $data = { "foo bar" => 1, "foo/bar" => 1 };
+    spath $data, q{/"foo bar"};
+    spath $data, q{/"foo/bar"};
+
+You can also use C<\> to escape quotes:
+
+    spath $data, q{/"foo\"bar"}; # embedded quotes
+
+* opts
+The only options currently accepted are error handlers. See L</"ERROR
+HANDLING">.
 
 =head1 EXPORTS
 

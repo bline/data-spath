@@ -44,26 +44,34 @@ my $data = {
     hash1 => { boo => TObj->new("foobly"), poo => TObj->new("barbly") },
     hash2 => {
         "b\"ar" => 1,
-        "b\"a\"r" => 1,
-        "b \"a\" r" => 1,
-        "b \" a \" r" => 1,
-        " " => 1,
-        " b" => 1,
-        " b " => 1,
-        " b a" => 1,
-        " b a " => 1,
-         " b a r" => 1,
-         " b a r " => 1,
-         "b a r" => 1,
-         "b \\ a r" => 1,
-         "b \\ a \\ r" => 1,
-         "b \\ \na\n \\ r" => 1,
-         "b \\\\ \na\n \\\\ r" => 1,
-         "\\\\\\\\\\" => 1,
-         "\\\\\\\\" => 1,
-         "\\\\\\" => 1,
-         "\\\\" => 1,
-         "\\" => 1,
+        "b\"a\"r" => 2,
+        "b \"a\" r" => 3,
+        "b \" a \" r" => 4,
+        "/" => 5,
+        "/b" => 6,
+        "/b/" => 7,
+        "/b/a" => 8,
+        "/b/a/" => 9,
+        "/b/a/r" => 10,
+        "/b/a/r/" => 11,
+        "b/a/r" => 12,
+        " " => 13,
+        " b" => 14,
+        " b " => 15,
+        " b a" => 16,
+        " b a " => 17,
+         " b a r" => 18,
+         " b a r " => 19,
+         "b a r" => 20,
+         "b \\ a r" => 21,
+         "b \\ a \\ r" => 22,
+         "b \\ \na\n \\ r" => 23,
+         "b \\\\ \na\n \\\\ r" => 24,
+         "\\\\\\\\\\" => 25,
+         "\\\\\\\\" => 26,
+         "\\\\\\" => 27,
+         "\\\\" => 28,
+         "\\" => 29,
     }
 };
 
@@ -77,8 +85,11 @@ is( spath( $data, "/object3/b/foo" ), $data->{object3}->b->{foo}, "object with h
 is( spath( $data, "/array1/1/a" ), $data->{array1}->[1]->a, "array with object" );
 is( spath( $data, "/hash1/poo/a" ), $data->{hash1}->{poo}->a, "hash with object" );
 for ( 1 .. 21 ) {
-    is( spath( $data, "/string$_" }, $data->{"string$_"} ), qq(string '$data->{"string$_"}' lookup) );
+    is( spath( $data, "/string$_" ), $data->{"string$_"}, qq(string '$data->{"string$_"}' lookup) );
 }
+is( spath( $data, q{/hash2/b\\"ar} ), 1, "Manual quote escape" );
+is( spath( $data, q{/hash2/"/"} ), 5, "Manual slash quoting" );
+is( spath( $data, q{/hash2/" b "} ), 15, "Manual space quoting" );
 for ( keys %{ $data->{hash2} } ) {
     (my $cp = $_) =~ s/(["'\\])/\\$1/g;
     is( spath( $data, qq[/hash2/"$cp"] ), $data->{hash2}->{$_}, "hash key '$cp' lookup" );

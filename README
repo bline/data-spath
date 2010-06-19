@@ -17,18 +17,26 @@ SYNOPSIS
         my $data = {
             foo => [ qw/foobly fooble/ ],
             bar => [ { bat => "boo" }, { bat => "bar" } ]
+            "foo bar" => 1,
+            "foo\"bar" => { "foo/bar" => 20 }
         };
 
         my $match;
 
         # returns foobly
-        $match = spath $data, "/foo/1";
+        $match = spath $data, "/foo/0";
 
         # returns boo
         $match = spath $data, "/bar/0/bat";
 
         # returns { bat => "bar" }
         $match = spath $data, "/bar/1";
+
+        # returns 1 
+        $match = spath $data, q{/"foo bar"};
+
+        # returns 20
+        $match = spath $data, q{/"foo\\"bar/"foo/bar"};
 
 DESCRIPTION
     This module implements very simple path lookups on nested data
@@ -39,7 +47,7 @@ DESCRIPTION
     return a single match. Also, when this module encounters a "blessed"
     reference, instead of access the references internal data structure
     (like Data::DPath) a method call is made on the object by the name of
-    the key. See "SYNOPSYS".
+    the key. See "SYNOPSIS".
 
 FUNCTIONS
   "spath( $data, $path, $opts )"
@@ -73,12 +81,21 @@ FUNCTIONS
         scalar context. If the method returns more than one thing, the
         current level is set to an array reference of the return, otherwise
         the current level is set to the return of the method call. See
-        "SYNOPSYS" for examples.
+        "SYNOPSIS" for examples.
 
-    *   opts
+    Quotes are allowed on each level. You only need quotes if you have
+    spaces or "/" in your keys. For example:
 
-        The only options currently accepted are error handlers. See "ERROR
-        HANDLING".
+        my $data = { "foo bar" => 1, "foo/bar" => 1 };
+        spath $data, q{/"foo bar"};
+        spath $data, q{/"foo/bar"};
+
+    You can also use "\" to escape quotes:
+
+        spath $data, q{/"foo\"bar"}; # embedded quotes
+
+    * opts The only options currently accepted are error handlers. See
+    "ERROR HANDLING".
 
 EXPORTS
     Nothing is exported by default. You can request "spath" be exported to
