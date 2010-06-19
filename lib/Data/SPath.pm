@@ -2,7 +2,7 @@ use strict;
 use warnings;
 package Data::SPath;
 BEGIN {
-  $Data::SPath::VERSION = '0.0001';
+  $Data::SPath::VERSION = '0.0002';
 }
 #ABSTRACT: lookup on nested data with simple path notation
 
@@ -167,7 +167,7 @@ Data::SPath - lookup on nested data with simple path notation
 
 =head1 VERSION
 
-version 0.0001
+version 0.0002
 
 =head1 SYNOPSIS
 
