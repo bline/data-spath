@@ -18,7 +18,13 @@ use Sub::Exporter -setup => {
     exports => [ spath => \&_build_spath ]
 };
 
-my @Error_Handlers = qw( method_miss key_miss index_miss key_on_non_hash );
+my @Error_Handlers = qw(
+    method_miss
+    key_miss
+    index_miss
+    key_on_non_hash
+    args_on_non_method
+);
 
 
 sub _build_spath {
