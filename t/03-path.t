@@ -1,7 +1,7 @@
 #!perl
 
 use strict;
-use Test::More 'no_plan';
+use Test::More tests => 95;
 
 BEGIN {
     use_ok( "Data::SPath", 'spath' );
