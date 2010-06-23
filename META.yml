@@ -3,6 +3,7 @@ abstract: 'lookup on nested data with simple path notation'
 author:
   - 'Scott Beck <scottbeck@gmail.com>'
 build_requires:
+  English: 0
   Test::More: 0
 configure_requires:
   ExtUtils::MakeMaker: 6.31
