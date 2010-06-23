@@ -211,26 +211,26 @@ sub _spath {
             return $opts->{args_on_non_method}->( $key, $current, $args, $depth )
                 if defined $args;
 
-            given( ref $current )
-            no warnings 'uninitialized';
-            if ( ref( $current ) eq 'HASH' ) {
+            given ( ref $current ) {
+                when( 'HASH' ) {
 
-                return $opts->{key_miss}->( $key, $current, $depth )
-                    unless exists $current->{ $key };
+                    return $opts->{key_miss}->( $key, $current, $depth )
+                        unless exists $current->{ $key };
 
-                $current = $current->{ $key };
-            }
-            elsif ( ref( $current ) eq 'ARRAY' ) {
+                    $current = $current->{ $key };
+                }
+                when ( 'ARRAY' ) {
 
-                return $opts->{key_on_non_hash}->( $key, $current, $depth )
-                    unless $key =~ /^\d+$/;
-                return $opts->{index_miss}->( $key, $current, $depth )
-                    if $#{ $current } < $key;
+                    return $opts->{key_on_non_hash}->( $key, $current, $depth )
+                        unless $key =~ /^\d+$/;
+                    return $opts->{index_miss}->( $key, $current, $depth )
+                        if $#{ $current } < $key;
 
-                $current = $current->[ $key ];
-            }
-            else {
-                return $opts->{key_on_non_hash}->( $key, $current, $depth );
+                    $current = $current->[ $key ];
+                }
+                default {
+                    return $opts->{key_on_non_hash}->( $key, $current, $depth );
+                }
             }
         }
     }
