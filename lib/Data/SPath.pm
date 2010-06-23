@@ -181,7 +181,6 @@ sub _tokenize_args {
                 qr/\s*(\w+)/s,
                 qr/\s*([^,]+)(.*)/s
             ], undef, 1 );
-    }
 }
 
 sub _spath {
