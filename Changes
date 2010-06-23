@@ -7,10 +7,10 @@
     * using switch feature of 5.10.0 to improve readability
     * moved argument parsing into a seperate function for
       maintainability/readability
-    * removed CriticTests until:
+    * removed EOLTests until:
       1. Makefile.PL isn't generated with space at the end of the perl
          require statement
-      2. CriticTests adds a skipfile option
+      2. EOLTests adds a skipfile option
 
 0.0003    2010-06-19 12:58:32 America/New_York
     * added ability to call methods with simple arguments.
