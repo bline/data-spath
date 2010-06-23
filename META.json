@@ -30,7 +30,6 @@
       },
       "test" : {
          "requires" : {
-            "English" : 0,
             "Test::More" : 0
          }
       }

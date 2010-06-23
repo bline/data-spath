@@ -8,12 +8,10 @@ Makefile.PL
 README
 SIGNATURE
 dist.ini
-foo.pl
 lib/Data/SPath.pm
 t/01-use.t
 t/02-error-handling.t
 t/03-path.t
-t/author-critic.t
 t/release-eol.t
 t/release-kwalitee.t
 t/release-no-tabs.t

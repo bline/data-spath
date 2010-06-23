@@ -12,7 +12,6 @@ my %WriteMakefileArgs = (
   'ABSTRACT' => 'lookup on nested data with simple path notation',
   'AUTHOR' => 'Scott Beck <scottbeck@gmail.com>',
   'BUILD_REQUIRES' => {
-    'English' => '0',
     'Test::More' => '0'
   },
   'CONFIGURE_REQUIRES' => {
