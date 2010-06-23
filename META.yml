@@ -19,6 +19,7 @@ requires:
   Scalar::Util: 0
   Sub::Exporter: 0
   Text::Balanced: 0
+  perl: 5.010_000
 resources:
   repository: git://github.com/bline/data-spath.git
-version: 0.0003
+version: 0.0004

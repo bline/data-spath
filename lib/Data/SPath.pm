@@ -2,12 +2,14 @@ use strict;
 use warnings;
 package Data::SPath;
 BEGIN {
-  $Data::SPath::VERSION = '0.0003';
+  $Data::SPath::VERSION = '0.0004';
 }
 #ABSTRACT: lookup on nested data with simple path notation
 
+use 5.010_000;
+use feature qw(switch);
 use Carp qw/croak/;
-use Scalar::Util qw/reftype blessed/;
+use Scalar::Util qw/blessed/;
 use Text::Balanced qw/
     extract_delimited
     extract_bracketed
@@ -42,7 +44,7 @@ sub _build_spath {
                 }
             }
             no warnings 'uninitialized';
-            unless ( ref( $opts->{ $_ } ) eq 'CODE' or reftype( $opts->{ $_ } ) eq 'CODE' ) {
+            unless ( ref( $opts->{ $_ } ) eq 'CODE' ) {
                 croak "$_ must be set to a code reference";
             }
         }
@@ -193,17 +195,15 @@ sub _spath {
                         qr/\s*([^,]+)(.*)/s
                     ], undef, 1 );
             }
-            if ( my $method = $current->can( $key ) ) {
-                if ( $wantlist ) {
-                    my @current = $current->$method( @args );
-                    $current = @current > 1 ? \@current : $current[0];
-                }
-                else {
-                    $current = $current->$method( @args );
-                }
+            return $opts->{method_miss}->( $key, $current, $depth )
+                unless my $method = $current->can( $key );
+
+            if ( $wantlist ) {
+                my @current = $current->$method( @args );
+                $current = @current > 1 ? \@current : $current[0];
             }
             else {
-                return $opts->{method_miss}->( $key, $current, $depth );
+                $current = $current->$method( @args );
             }
         }
         else {
@@ -211,23 +211,22 @@ sub _spath {
             return $opts->{args_on_non_method}->( $key, $current, $args, $depth )
                 if defined $args;
 
-            # optimization taken from Data::DPath
+            given( ref $current )
             no warnings 'uninitialized';
-            if ( ref( $current ) eq 'HASH' or reftype( $current ) eq 'HASH' ) {
-                if ( exists $current->{ $key } ) {
-                    $current = $current->{ $key };
-                }
-                else {
-                    return $opts->{key_miss}->( $key, $current, $depth );
-                }
+            if ( ref( $current ) eq 'HASH' ) {
+
+                return $opts->{key_miss}->( $key, $current, $depth )
+                    unless exists $current->{ $key };
+
+                $current = $current->{ $key };
             }
-            elsif ( ref( $current ) eq 'ARRAY' or reftype( $current ) eq 'ARRAY' ) {
-                unless ( $key =~ /^\d+$/ ) {
-                    $opts->{key_on_non_hash}->( $key, $current, $depth );
-                }
-                if ( $#{ $current } < $key ) {
-                    return $opts->{index_miss}->( $key, $current, $depth );
-                }
+            elsif ( ref( $current ) eq 'ARRAY' ) {
+
+                return $opts->{key_on_non_hash}->( $key, $current, $depth )
+                    unless $key =~ /^\d+$/;
+                return $opts->{index_miss}->( $key, $current, $depth )
+                    if $#{ $current } < $key;
+
                 $current = $current->[ $key ];
             }
             else {
@@ -251,7 +250,7 @@ Data::SPath - lookup on nested data with simple path notation
 
 =head1 VERSION
 
-version 0.0003
+version 0.0004
 
 =head1 SYNOPSIS
 

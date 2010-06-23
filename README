@@ -2,7 +2,7 @@ NAME
     Data::SPath - lookup on nested data with simple path notation
 
 VERSION
-    version 0.0003
+    version 0.0004
 
 SYNOPSIS
         use Data::SPath

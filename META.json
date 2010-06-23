@@ -24,7 +24,8 @@
             "Carp" : 0,
             "Scalar::Util" : 0,
             "Sub::Exporter" : 0,
-            "Text::Balanced" : 0
+            "Text::Balanced" : 0,
+            "perl" : "5.010_000"
          }
       },
       "test" : {
@@ -42,5 +43,5 @@
          "web" : "http://github.com/bline/data-spath"
       }
    },
-   "version" : "0.0003"
+   "version" : "0.0004"
 }
