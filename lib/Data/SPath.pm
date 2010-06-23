@@ -9,7 +9,7 @@ BEGIN {
 use 5.010_000;
 use feature qw(switch);
 use Carp qw/croak/;
-use Scalar::Util qw/blessed/;
+use Scalar::Util qw/reftype blessed/;
 use Text::Balanced qw/
     extract_delimited
     extract_bracketed
@@ -63,6 +63,7 @@ sub _unescape {
 
 # Modified from Data::DPath. Added /s modifier to allow new lines in keys (why
 # not?)
+# this originally only supported double quote
 sub _unquote {
     my ($str) = @_;
     $str =~ s/^(['"])(.*)\1$/$2/sg;
@@ -169,6 +170,20 @@ sub _tokenize {
     return \@tokens;
 }
 
+sub _tokenize_args {
+    my $args = shift;
+    ( $args ) = $args =~ /^\((.*)\)$/;
+    return map { _unescape( $_ =~ /^['"]/ ? _unquote( $_ ) : $_ ) }
+            extract_multiple( $args, [
+                # quoted structures
+                sub { extract_delimited( $_[0], q|'"| ) },
+                # handle unquoted bare words
+                qr/\s*(\w+)/s,
+                qr/\s*([^,]+)(.*)/s
+            ], undef, 1 );
+    }
+}
+
 sub _spath {
     my ( $data, $path, $opts ) = @_;
 
@@ -183,18 +198,11 @@ sub _spath {
         my ( $key, $args ) = @{ $token };
 
         if ( blessed $current ) {
+
             my @args;
-            if ( defined $args ) {
-                ($args) = $args =~ /^\((.*)\)$/;
-                @args = map { _unescape( $_ =~ /^['"]/ ? _unquote( $_ ) : $_ ) }
-                    extract_multiple( $args, [
-                        # quoted structures
-                        sub { extract_delimited( $_[0], q|'"| ) },
-                        # handle unquoted bare words
-                        qr/\s*(\w+)/s,
-                        qr/\s*([^,]+)(.*)/s
-                    ], undef, 1 );
-            }
+            @args = _tokenize_args( $args )
+                if defined $args;
+
             return $opts->{method_miss}->( $key, $current, $depth )
                 unless my $method = $current->can( $key );
 
